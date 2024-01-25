@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple OCR Application with Camera</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+
+        #ocrResult {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            min-height: 50px; /* Ensures the div is visible even when empty */
+        }
+
+        #videoElement {
+            width: 100%;
+            max-width: 400px; /* Adjust based on your needs */
+        }
+    </style>
+</head>
+<body>
+    <h1>Scan with Camera</h1>
+    <video id="videoElement" autoplay></video>
+    <button onclick="captureImage()">Capture Image</button>
+    <canvas id="canvas" style="display: none;"></canvas> <!-- Hidden canvas to capture image -->
+    <div id="ocrResult">OCR results will appear here...</div>
+
+    <!-- Tesseract.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.1/dist/tesseract.min.js"></script>
+
+    <!-- JavaScript for OCR and Camera functionality -->
+    <script>
+        const video = document.getElementById('videoElement');
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+
+        // Request access to the camera
+        if (navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: true })
+            .then(function(stream) {
+                video.srcObject = stream;
+            })
+            .catch(function(err) {
+                console.log("Something went wrong with accessing the camera!", err);
+            });
+        }
+
+        function captureImage() {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageDataUrl = canvas.toDataURL('image/png');
+
+            Tesseract.recognize(
+                imageDataUrl,
+                'eng', // Language
+                {
+                    logger: m => console.log(m) // Log progress
+                }
+            ).then(({ data: { text } }) => {
+                document.getElementById('ocrResult').innerText = text;
+            })
+            .catch(error => {
+                console.error('OCR error:', error);
+                document.getElementById('ocrResult').innerText = 'Error performing OCR!';
+            });
+        }
+    </script>
+</body>
+</html>
